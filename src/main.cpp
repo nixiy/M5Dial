@@ -1,19 +1,10 @@
-/**
- * @file encoder.ino
- * @author SeanKwok (shaoxiang@m5stack.com)
- * @brief M5Dial Encoder Test
- * @version 0.2
- * @date 2023-10-18
- *
- *
- * @Hardwares: M5Dial
- * @Platform Version: Arduino M5Stack Board Manager v2.0.7
- * @Dependent Library:
- * M5GFX: https://github.com/m5stack/M5GFX
- * M5Unified: https://github.com/m5stack/M5Unified
- */
+#include <ESP32Servo.h>
 
 #include "M5Dial.h"
+
+Servo servo1;
+
+const int SV_PIN = G2;
 
 void setup() {
     auto cfg = M5.config();
@@ -22,15 +13,47 @@ void setup() {
     M5Dial.Display.setTextDatum(middle_center);
     M5Dial.Display.setTextFont(&fonts::Orbitron_Light_32);
     M5Dial.Display.setTextSize(2);
+    pinMode(SV_PIN, OUTPUT);
+    servo1.setPeriodHertz(50);
+    servo1.attach(SV_PIN, 500, 2500);
+    servo1.write(0);
 }
 
 long oldPosition = -999;
+long newPosition = 0;
 
-void loop() {
-    M5Dial.update();
-    long newPosition = M5Dial.Encoder.read();
+/**
+ * メロディを再生する
+ */
+void speaker_playTone() {
+    for (int i = 0; i < 10; i++) {
+        M5Dial.Speaker.tone(i * 1000, 50);
+        delay(50);
+    }
+    for (int i = 10; i >= 0; i--) {
+        M5Dial.Speaker.tone(i * 1000, 50);
+        delay(50);
+    }
+}
+
+/**
+ * ロータリエンコーダの読み取り位置をclampする
+ * 最大値を超えた場合、エンコーダ値を初期化する
+ */
+void encoderClamp() {
+    if (newPosition >= 200) {
+        newPosition = 200;
+        M5Dial.Encoder.write(0);
+    } else if (newPosition <= 0) {
+        newPosition = 0;
+        M5Dial.Encoder.write(0);
+    }
+}
+
+void encoder_and_display() {
+    newPosition = M5Dial.Encoder.read() * 3;
+
     if (newPosition != oldPosition) {
-        M5Dial.Speaker.tone(8000, 20);
         M5Dial.Display.clear();
         oldPosition = newPosition;
         Serial.println(newPosition);
@@ -41,7 +64,21 @@ void loop() {
     if (M5Dial.BtnA.wasPressed()) {
         M5Dial.Encoder.readAndReset();
     }
-    if (M5Dial.BtnA.pressedFor(5000)) {
+    if (M5Dial.BtnA.pressedFor(2000)) {
         M5Dial.Encoder.write(100);
+        speaker_playTone();
     }
+}
+
+/**
+ * サーボモーターを指定角度に回転させる
+ */
+void motor_rotate() { servo1.write(newPosition); }
+
+void loop() {
+    M5Dial.update();
+
+    encoder_and_display();
+    encoderClamp();
+    motor_rotate();
 }
