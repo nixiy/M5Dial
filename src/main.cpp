@@ -1,10 +1,16 @@
 #include <ESP32Servo.h>
+#include <PCA9685.h>  //PCA9685用ヘッダーファイル
 
 #include "M5Dial.h"
 
 Servo servo1;
 
 const int SV_PIN = G2;
+
+PCA9685 pwm = PCA9685(0x40);
+
+#define SERVOMIN 150  // 最小パルス幅
+#define SERVOMAX 600  // 最大パルス幅
 
 void setup() {
     auto cfg = M5.config();
@@ -17,6 +23,15 @@ void setup() {
     servo1.setPeriodHertz(50);
     servo1.attach(SV_PIN, 500, 2500);
     servo1.write(0);
+
+    pwm.begin();
+    pwm.setPWMFreq(50);
+}
+
+void servo_write(int ch, int ang) {  // 動かすサーボチャンネルと角度を指定
+    ang = map(ang, 0, 180, SERVOMIN,
+              SERVOMAX);  // 角度（0～180）をPWMのパルス幅（150～500）に変換
+    pwm.setPWM(ch, 0, ang);
 }
 
 long oldPosition = -999;
@@ -73,7 +88,12 @@ void encoder_and_display() {
 /**
  * サーボモーターを指定角度に回転させる
  */
-void motor_rotate() { servo1.write(newPosition); }
+void motor_rotate() {
+    servo1.write(newPosition);
+    for (int i = 0; i < 16; i++) {
+        servo_write(i, newPosition);
+    }
+}
 
 void loop() {
     M5Dial.update();
