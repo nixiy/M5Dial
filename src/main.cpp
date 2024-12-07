@@ -10,7 +10,10 @@ const int SV_PIN = G2;
 PCA9685 pwm = PCA9685(0x40);
 
 #define SERVOMIN 150  // 最小パルス幅
-#define SERVOMAX 600  // 最大パルス幅
+#define SERVOMAX 500  // 最大パルス幅
+
+#define RIGHT_WING_PIN 0
+#define LEFT_WING_PIN 1
 
 void setup() {
     auto cfg = M5.config();
@@ -103,6 +106,29 @@ void motor_sample2() {
     motor_init();
 }
 
+#define RIGHT_OFFSET 200
+
+int wing_ang(int pin, int ang) {
+    if (pin == LEFT_WING_PIN) {
+        return ang;
+    } else if (pin == RIGHT_WING_PIN) {
+        return RIGHT_OFFSET - ang;
+    }
+}
+
+/**
+ * 翼を稼働させる
+ */
+void motor_wing() {
+    servo_write(RIGHT_WING_PIN, wing_ang(RIGHT_WING_PIN, 170));  // 150
+    servo_write(LEFT_WING_PIN, wing_ang(LEFT_WING_PIN, 170));    // 30
+
+    delay(2000);
+
+    servo_write(RIGHT_WING_PIN, wing_ang(RIGHT_WING_PIN, 0));  // 0
+    servo_write(LEFT_WING_PIN, wing_ang(LEFT_WING_PIN, 0));    // 180
+}
+
 void encoder_and_display() {
     newPosition = M5Dial.Encoder.read() * 3;
 
@@ -119,8 +145,8 @@ void encoder_and_display() {
     }
     if (M5Dial.BtnA.pressedFor(1000)) {
         // M5Dial.Encoder.write(100);
-        speaker_playTone();
-        motor_sample2();
+        // speaker_playTone();
+        motor_wing();
     }
 }
 
