@@ -65,6 +65,44 @@ void encoderClamp() {
     }
 }
 
+/**
+ * 回転角度を徐々に大きく、ゆっくり回転させる
+ */
+void motor_sample() {
+    for (int j = 0; j <= 200; j += 5) {
+        for (int i = 0; i < 16; i++) {
+            servo_write(i, j);
+        }
+        delay(j);
+    }
+    for (int j = 200; j >= 0; j -= 5) {
+        for (int i = 0; i < 16; i++) {
+            servo_write(i, j);
+        }
+        delay(j);
+    }
+}
+
+void motor_init() {
+    for (int i = 0; i < 16; i++) {
+        servo_write(i, 0);
+    }
+}
+
+/**
+ * サンプル2
+ */
+void motor_sample2() {
+    for (int deg = 0; deg < 180; deg += 30) {
+        for (int pin = 0; pin < 9; pin++) {
+            servo_write(pin, deg);
+            delay(deg * 2);
+        }
+    }
+
+    motor_init();
+}
+
 void encoder_and_display() {
     newPosition = M5Dial.Encoder.read() * 3;
 
@@ -79,9 +117,10 @@ void encoder_and_display() {
     if (M5Dial.BtnA.wasPressed()) {
         M5Dial.Encoder.readAndReset();
     }
-    if (M5Dial.BtnA.pressedFor(2000)) {
-        M5Dial.Encoder.write(100);
+    if (M5Dial.BtnA.pressedFor(1000)) {
+        // M5Dial.Encoder.write(100);
         speaker_playTone();
+        motor_sample2();
     }
 }
 
@@ -90,9 +129,9 @@ void encoder_and_display() {
  */
 void motor_rotate() {
     servo1.write(newPosition);
-    for (int i = 0; i < 16; i++) {
-        servo_write(i, newPosition);
-    }
+    // for (int i = 0; i < 16; i++) {
+    //     servo_write(i, newPosition);
+    // }
 }
 
 void loop() {
